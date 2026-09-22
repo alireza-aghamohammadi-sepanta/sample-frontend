@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
-import { Todo } from '../types/todo';
+import { Todo, Asset } from '../types/todo';
+import AttachmentUploader from './AttachmentUploader';
+import AttachmentChip from './AttachmentChip';
 
 export interface CreateTaskModalProps {
   isOpen: boolean;
@@ -15,6 +17,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [touched, setTouched] = useState<{ title: boolean; description: boolean }>({
     title: false,
     description: false,
@@ -26,6 +29,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     if (isOpen) {
       setTitle('');
       setDescription('');
+      setAssets([]);
       setTouched({ title: false, description: false });
       setApiError(null);
       setIsSubmitting(false);
@@ -58,6 +62,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   const isFormValid = !isTitleEmpty && !isTitleTooLong && !isDescTooLong;
 
+  const handleAssetUploaded = (asset: Asset) => {
+    setAssets((prev) => [...prev, asset]);
+  };
+
+  const handleRemoveAsset = (assetId: string) => {
+    setAssets((prev) => prev.filter((a) => a.id !== assetId));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched({ title: true, description: true });
@@ -72,6 +84,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       const payload = {
         title: trimmedTitle,
         description: description.trim() || null,
+        asset_ids: assets.map((a) => a.id),
       };
       const created = await client.post<Todo>('/todos', payload);
       if (onTaskCreated) {
@@ -101,6 +114,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
+        padding: '1rem',
       }}
     >
       <div
@@ -111,6 +125,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           maxWidth: '500px',
           padding: '1.5rem',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         <div
@@ -156,7 +174,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+          }}
+        >
           <div style={{ marginBottom: '1rem' }}>
             <label
               htmlFor="task-title"
@@ -249,11 +274,49 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             )}
           </div>
 
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: 500,
+                fontSize: '0.9rem',
+              }}
+            >
+              Attachments {assets.length > 0 && `(${assets.length}/10)`}
+            </label>
+            <AttachmentUploader
+              currentAssets={assets}
+              onAssetUploaded={handleAssetUploaded}
+              disabled={isSubmitting}
+            />
+            {assets.length > 0 && (
+              <div
+                data-testid="attached-assets"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                  marginTop: '0.5rem',
+                }}
+              >
+                {assets.map((asset) => (
+                  <AttachmentChip
+                    key={asset.id}
+                    asset={asset}
+                    onRemove={handleRemoveAsset}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
           <div
             style={{
               display: 'flex',
               justifyContent: 'flex-end',
               gap: '0.75rem',
+              marginTop: '0.5rem',
             }}
           >
             <button

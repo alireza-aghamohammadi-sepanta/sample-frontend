@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
 import { Todo, Asset } from '../types/todo';
+import AttachmentUploader from './AttachmentUploader';
+import AttachmentChip from './AttachmentChip';
 
 export interface EditTaskModalProps {
   isOpen: boolean;
@@ -64,6 +66,10 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 
   const handleRemoveAsset = (assetId: string) => {
     setAssets((prev) => prev.filter((a) => a.id !== assetId));
+  };
+
+  const handleAssetUploaded = (asset: Asset) => {
+    setAssets((prev) => [...prev, asset]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -273,73 +279,45 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
             )}
           </div>
 
-          {assets.length > 0 && (
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label
-                style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 500,
-                  fontSize: '0.875rem',
-                  color: '#333',
-                }}
-              >
-                Attached Assets ({assets.length})
-              </label>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                color: '#333',
+              }}
+            >
+              Attached Assets ({assets.length})
+            </label>
+
+            <AttachmentUploader
+              currentAssets={assets}
+              onAssetUploaded={handleAssetUploaded}
+              disabled={isSubmitting}
+            />
+
+            {assets.length > 0 && (
               <div
                 data-testid="attached-assets"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '0.5rem',
+                  marginTop: '0.5rem',
                 }}
               >
                 {assets.map((asset) => (
-                  <div
+                  <AttachmentChip
                     key={asset.id}
-                    data-testid={`attached-asset-${asset.id}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.5rem 0.75rem',
-                      backgroundColor: '#f8f9fa',
-                      borderRadius: '4px',
-                      border: '1px solid #e9ecef',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '0.85rem',
-                        color: '#495057',
-                        wordBreak: 'break-all',
-                      }}
-                    >
-                      {asset.gcs_path || asset.public_url || asset.id}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAsset(asset.id)}
-                      aria-label={`Remove asset ${asset.id}`}
-                      style={{
-                        marginLeft: '0.5rem',
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: '#dc3545',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
+                    asset={asset}
+                    onRemove={handleRemoveAsset}
+                  />
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <div
             style={{

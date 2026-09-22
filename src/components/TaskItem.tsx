@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
 import { Todo } from '../types/todo';
+import AttachmentChip from './AttachmentChip';
 
 export interface TaskItemProps {
   todo: Todo;
@@ -162,13 +163,30 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         <div
           data-testid={`todo-assets-${todo.id}`}
           style={{
-            fontSize: '0.75rem',
-            color: '#666',
             paddingLeft: '1.85rem',
-            marginTop: '0.25rem',
+            marginTop: '0.35rem',
           }}
         >
-          {todo.assets.length} attached {todo.assets.length === 1 ? 'asset' : 'assets'}
+          <div
+            style={{
+              fontSize: '0.75rem',
+              color: '#666',
+              marginBottom: '0.35rem',
+            }}
+          >
+            {todo.assets.length} attached {todo.assets.length === 1 ? 'asset' : 'assets'}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+            }}
+          >
+            {todo.assets.map((asset) => (
+              <AttachmentChip key={asset.id} asset={asset} />
+            ))}
+          </div>
         </div>
       )}
       <div
