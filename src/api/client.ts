@@ -164,6 +164,17 @@ export const client = {
             : JSON.stringify(data)
           : undefined,
     }),
+  patch: <T = any>(endpoint: string, data?: any, options?: RequestInit) =>
+    request<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body:
+        data !== undefined
+          ? typeof data === 'string'
+            ? data
+            : JSON.stringify(data)
+          : undefined,
+    }),
   delete: <T = any>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
   request,
@@ -172,5 +183,7 @@ export const client = {
   clearToken,
   setOnUnauthorized,
 };
+
+export const apiClient = client;
 
 export default client;
