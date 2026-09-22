@@ -1,22 +1,10 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-
-const Dashboard: React.FC = () => {
-  const { logout } = useAuth();
-
-  return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Dashboard</h1>
-      <button onClick={logout} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
-        Log Out
-      </button>
-    </div>
-  );
-};
+import DashboardPage from './pages/DashboardPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -27,7 +15,7 @@ export const AppRoutes: React.FC = () => {
         path="/"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardPage />
           </ProtectedRoute>
         }
       />
