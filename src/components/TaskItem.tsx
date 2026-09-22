@@ -5,9 +5,16 @@ import { Todo } from '../types/todo';
 export interface TaskItemProps {
   todo: Todo;
   onToggle?: (updatedTodo: Todo) => void;
+  onEdit?: (todo: Todo) => void;
+  onDelete?: (todo: Todo) => void;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({ todo, onToggle }) => {
+export const TaskItem: React.FC<TaskItemProps> = ({
+  todo,
+  onToggle,
+  onEdit,
+  onDelete,
+}) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [optimisticCompleted, setOptimisticCompleted] = useState<boolean | null>(null);
 
@@ -58,6 +65,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ todo, onToggle }) => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -86,18 +95,56 @@ export const TaskItem: React.FC<TaskItemProps> = ({ todo, onToggle }) => {
             {todo.title}
           </h3>
         </div>
-        <span
-          style={{
-            fontSize: '0.75rem',
-            padding: '0.2rem 0.5rem',
-            borderRadius: '12px',
-            backgroundColor: isCompleted ? '#e6f4ea' : '#e8f0fe',
-            color: isCompleted ? '#137333' : '#1a73e8',
-            fontWeight: 500,
-          }}
-        >
-          {isCompleted ? 'Completed' : 'Active'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span
+            style={{
+              fontSize: '0.75rem',
+              padding: '0.2rem 0.5rem',
+              borderRadius: '12px',
+              backgroundColor: isCompleted ? '#e6f4ea' : '#e8f0fe',
+              color: isCompleted ? '#137333' : '#1a73e8',
+              fontWeight: 500,
+            }}
+          >
+            {isCompleted ? 'Completed' : 'Active'}
+          </span>
+          <button
+            type="button"
+            onClick={() => onEdit?.(todo)}
+            data-testid={`edit-task-${todo.id}`}
+            aria-label="Edit task"
+            style={{
+              padding: '0.25rem 0.6rem',
+              fontSize: '0.8rem',
+              backgroundColor: '#f1f3f5',
+              color: '#495057',
+              border: '1px solid #ced4da',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete?.(todo)}
+            data-testid={`delete-task-${todo.id}`}
+            aria-label="Delete task"
+            style={{
+              padding: '0.25rem 0.6rem',
+              fontSize: '0.8rem',
+              backgroundColor: '#fff5f5',
+              color: '#e03131',
+              border: '1px solid #ffc9c9',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+          >
+            Delete
+          </button>
+        </div>
       </div>
       {todo.description && (
         <p
@@ -110,6 +157,19 @@ export const TaskItem: React.FC<TaskItemProps> = ({ todo, onToggle }) => {
         >
           {todo.description}
         </p>
+      )}
+      {todo.assets && todo.assets.length > 0 && (
+        <div
+          data-testid={`todo-assets-${todo.id}`}
+          style={{
+            fontSize: '0.75rem',
+            color: '#666',
+            paddingLeft: '1.85rem',
+            marginTop: '0.25rem',
+          }}
+        >
+          {todo.assets.length} attached {todo.assets.length === 1 ? 'asset' : 'assets'}
+        </div>
       )}
       <div
         style={{

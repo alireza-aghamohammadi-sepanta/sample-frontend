@@ -6,6 +6,8 @@ import TaskFilter from '../components/TaskFilter';
 import TaskList from '../components/TaskList';
 import EmptyState from '../components/EmptyState';
 import CreateTaskModal from '../components/CreateTaskModal';
+import EditTaskModal from '../components/EditTaskModal';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
 export const DashboardPage: React.FC = () => {
   const { logout } = useAuth();
@@ -14,6 +16,8 @@ export const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [deletingTodo, setDeletingTodo] = useState<Todo | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,6 +62,24 @@ export const DashboardPage: React.FC = () => {
     setTodos((prev) =>
       prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
     );
+  };
+
+  const handleEditTask = (todo: Todo) => {
+    setEditingTodo(todo);
+  };
+
+  const handleDeleteTask = (todo: Todo) => {
+    setDeletingTodo(todo);
+  };
+
+  const handleTaskUpdated = (updatedTodo: Todo) => {
+    setTodos((prev) =>
+      prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
+    );
+  };
+
+  const handleTaskDeleted = (deletedId: string) => {
+    setTodos((prev) => prev.filter((todo) => todo.id !== deletedId));
   };
 
   // In-memory client-side filtering for sub-50ms latency
@@ -143,7 +165,12 @@ export const DashboardPage: React.FC = () => {
         ) : filteredTodos.length === 0 ? (
           <EmptyState filter={filter} />
         ) : (
-          <TaskList todos={filteredTodos} onToggle={handleToggleTask} />
+          <TaskList
+            todos={filteredTodos}
+            onToggle={handleToggleTask}
+            onEdit={handleEditTask}
+            onDelete={handleDeleteTask}
+          />
         )}
       </main>
 
@@ -151,6 +178,20 @@ export const DashboardPage: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onTaskCreated={handleTaskCreated}
+      />
+
+      <EditTaskModal
+        isOpen={editingTodo !== null}
+        todo={editingTodo}
+        onClose={() => setEditingTodo(null)}
+        onTaskUpdated={handleTaskUpdated}
+      />
+
+      <DeleteConfirmModal
+        isOpen={deletingTodo !== null}
+        todo={deletingTodo}
+        onClose={() => setDeletingTodo(null)}
+        onTaskDeleted={handleTaskDeleted}
       />
     </div>
   );
