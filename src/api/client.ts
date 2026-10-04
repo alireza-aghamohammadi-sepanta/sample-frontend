@@ -1,3 +1,5 @@
+import type { TodoList } from '../types/todo';
+
 export const TOKEN_KEY = 'token';
 
 export class ApiError extends Error {
@@ -139,6 +141,24 @@ export async function request<T = any>(
   return (await response.text()) as unknown as T;
 }
 
+export const getLists = (): Promise<TodoList[]> =>
+  request<TodoList[]>('/lists', { method: 'GET' });
+
+export const createList = (data: { name: string } | string): Promise<TodoList> =>
+  request<TodoList>('/lists', {
+    method: 'POST',
+    body: JSON.stringify(typeof data === 'string' ? { name: data } : data),
+  });
+
+export const updateList = (id: string, data: { name: string } | string): Promise<TodoList> =>
+  request<TodoList>(`/lists/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(typeof data === 'string' ? { name: data } : data),
+  });
+
+export const deleteList = (id: string): Promise<void> =>
+  request<void>(`/lists/${id}`, { method: 'DELETE' });
+
 export const client = {
   get: <T = any>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'GET' }),
@@ -177,6 +197,10 @@ export const client = {
     }),
   delete: <T = any>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
+  getLists,
+  createList,
+  updateList,
+  deleteList,
   request,
   setToken,
   getToken,

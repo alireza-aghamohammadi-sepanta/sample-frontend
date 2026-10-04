@@ -14,6 +14,7 @@ const initialTodos: Todo[] = [
   {
     id: 'todo-1',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'First active task',
     description: 'First active description',
     is_completed: false,
@@ -33,6 +34,7 @@ const initialTodos: Todo[] = [
   {
     id: 'todo-2',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'Second completed task',
     description: 'Second completed description',
     is_completed: true,
@@ -343,6 +345,7 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
     const sampleTodo: Todo = {
       id: 'sample-todo-1',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Sample Edit Todo',
       description: 'Sample description',
       is_completed: false,
@@ -509,6 +512,7 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
     const sampleTodo: Todo = {
       id: 'sample-todo-2',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Task To Delete',
       description: null,
       is_completed: false,
@@ -549,6 +553,7 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
     const sampleTodo: Todo = {
       id: 'item-triggers',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Action Trigger Task',
       description: 'Trigger description',
       is_completed: false,

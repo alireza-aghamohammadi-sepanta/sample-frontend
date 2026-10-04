@@ -8,12 +8,14 @@ export interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTaskCreated?: (task: Todo) => void;
+  listId?: string;
 }
 
 export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   isOpen,
   onClose,
   onTaskCreated,
+  listId,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -88,6 +90,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         description: description.trim() || null,
         due_date: dueDate || null,
         asset_ids: assets.map((a) => a.id),
+        ...(listId ? { list_id: listId } : {}),
       };
       const created = await client.post<Todo>('/todos', payload);
       if (onTaskCreated) {

@@ -13,6 +13,7 @@ const initialTodos: Todo[] = [
   {
     id: 'todo-1',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'First active task',
     description: 'First active description',
     is_completed: false,
@@ -23,6 +24,7 @@ const initialTodos: Todo[] = [
   {
     id: 'todo-2',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'Second completed task',
     description: 'Second completed description',
     is_completed: true,
@@ -58,6 +60,7 @@ describe('Task Creation and Completion Toggle (T3 / R3 & R4)', () => {
     const createdTodo: Todo = {
       id: 'todo-new-1',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'New Unique Task Title',
       description: 'A helpful description',
       is_completed: false,
@@ -468,6 +471,7 @@ describe('Task Creation and Completion Toggle (T3 / R3 & R4)', () => {
     const sampleTodo: Todo = {
       id: 'item-1',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Sample Task',
       description: 'Sample description',
       is_completed: false,

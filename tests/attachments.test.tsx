@@ -408,6 +408,7 @@ describe('Direct-to-cloud Media Attachments (T5 / R6 & R3 AC-3)', () => {
     const todoWithAssets: Todo = {
       id: 'todo-attachments-1',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Task with media attachments',
       description: 'Contains images and videos',
       is_completed: false,
@@ -445,6 +446,7 @@ describe('Direct-to-cloud Media Attachments (T5 / R6 & R3 AC-3)', () => {
       const createdTodo: Todo = {
         id: 'todo-created-with-asset',
         user_id: 'user-1',
+        list_id: 'list-1',
         title: 'Task With Attachment',
         description: 'Description here',
         is_completed: false,
@@ -528,6 +530,7 @@ describe('Direct-to-cloud Media Attachments (T5 / R6 & R3 AC-3)', () => {
       const existingTodo: Todo = {
         id: 'todo-existing-1',
         user_id: 'user-1',
+        list_id: 'list-1',
         title: 'Existing Task',
         description: 'Existing Desc',
         is_completed: false,
