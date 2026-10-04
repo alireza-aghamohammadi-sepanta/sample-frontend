@@ -528,5 +528,105 @@ describe('Task Creation and Completion Toggle (T3 / R3 & R4)', () => {
         expect(checkbox.checked).toBe(false);
       });
     });
+
+    // Deadline status pill badges (T3 / AC-1 to AC-5)
+    const formatDate = (d: Date) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const getRelativeDate = (offsetDays: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return formatDate(d);
+    };
+
+    it('displays an "Overdue" pill badge styled in #DC2626 for an active task with a due date before today (AC-1)', () => {
+      const overdueDate = getRelativeDate(-2);
+      const overdueTodo: Todo = {
+        ...sampleTodo,
+        id: 'todo-overdue',
+        title: 'Overdue Task',
+        due_date: overdueDate,
+      };
+
+      render(<TaskItem todo={overdueTodo} />);
+
+      const badge = screen.getByText('Overdue');
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveStyle({ color: '#DC2626', borderRadius: '9999px', padding: '2px 8px' });
+    });
+
+    it('displays "Due Today" styled in #D97706 for an active task due today (AC-2)', () => {
+      const todayDate = getRelativeDate(0);
+      const todayTodo: Todo = {
+        ...sampleTodo,
+        id: 'todo-today',
+        title: 'Due Today Task',
+        due_date: todayDate,
+      };
+
+      render(<TaskItem todo={todayTodo} />);
+
+      const badge = screen.getByText('Due Today');
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveStyle({ color: '#D97706', borderRadius: '9999px', padding: '2px 8px' });
+    });
+
+    it('displays an upcoming deadline badge with neutral styling for an upcoming task (AC-3)', () => {
+      const upcomingDate = getRelativeDate(3);
+      const upcomingTodo: Todo = {
+        ...sampleTodo,
+        id: 'todo-upcoming',
+        title: 'Upcoming Task',
+        due_date: upcomingDate,
+      };
+
+      render(<TaskItem todo={upcomingTodo} />);
+
+      const badge = screen.getByText(`Due: ${upcomingDate}`);
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveStyle({ borderRadius: '9999px', padding: '2px 8px' });
+    });
+
+    it('renders no deadline badge for an undated task (AC-4)', () => {
+      const undatedTodo: Todo = {
+        ...sampleTodo,
+        id: 'todo-undated',
+        title: 'Undated Task',
+        due_date: null,
+      };
+
+      render(<TaskItem todo={undatedTodo} />);
+
+      expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+      expect(screen.queryByText('Due Today')).not.toBeInTheDocument();
+      expect(screen.queryByTestId(/deadline-badge/)).not.toBeInTheDocument();
+    });
+
+    it('suppresses urgency badges in favor of the emerald completed badge (#059669) for a completed task (AC-5)', () => {
+      const overdueDate = getRelativeDate(-5);
+      const completedTodo: Todo = {
+        ...sampleTodo,
+        id: 'todo-completed',
+        title: 'Completed Task',
+        due_date: overdueDate,
+        is_completed: true,
+      };
+
+      render(<TaskItem todo={completedTodo} />);
+
+      const completedBadge = screen.getByText('Completed');
+      expect(completedBadge).toBeInTheDocument();
+      expect(completedBadge).toHaveStyle({ color: '#059669', borderRadius: '9999px', padding: '2px 8px' });
+      expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+      expect(screen.queryByText('Due Today')).not.toBeInTheDocument();
+      expect(screen.queryByTestId(/deadline-badge/)).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Completed Task' })).toHaveStyle({
+        textDecoration: 'line-through',
+      });
+    });
   });
 });
