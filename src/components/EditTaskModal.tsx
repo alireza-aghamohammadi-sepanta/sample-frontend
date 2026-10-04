@@ -19,6 +19,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [assets, setAssets] = useState<Asset[]>([]);
   const [touched, setTouched] = useState<{ title: boolean; description: boolean }>({
     title: false,
@@ -31,6 +32,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
     if (isOpen && todo) {
       setTitle(todo.title || '');
       setDescription(todo.description || '');
+      setDueDate(todo.due_date ? todo.due_date.split('T')[0] : '');
       setAssets(todo.assets ? [...todo.assets] : []);
       setTouched({ title: false, description: false });
       setApiError(null);
@@ -86,6 +88,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       const payload = {
         title: trimmedTitle,
         description: description.trim() || null,
+        due_date: dueDate || null,
         asset_ids: assets.map((a) => a.id),
       };
       const updated = await client.patch<Todo>(`/todos/${todo.id}`, payload);
@@ -277,6 +280,61 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 {descError}
               </p>
             )}
+          </div>
+
+          <div style={{ marginBottom: '1.25rem' }}>
+            <label
+              htmlFor="edit-task-due-date-input"
+              style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                color: '#333',
+              }}
+            >
+              Due Date
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                id="edit-task-due-date-input"
+                name="due_date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                style={{
+                  flex: 1,
+                  height: '36px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  color: '#0F172A',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {dueDate && (
+                <button
+                  type="button"
+                  onClick={() => setDueDate('')}
+                  aria-label="Clear date"
+                  style={{
+                    height: '36px',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #E2E8F0',
+                    backgroundColor: '#FFFFFF',
+                    color: '#64748B',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{ marginBottom: '1.25rem' }}>

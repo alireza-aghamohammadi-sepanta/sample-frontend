@@ -9,6 +9,48 @@ import CreateTaskModal from '../components/CreateTaskModal';
 import EditTaskModal from '../components/EditTaskModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 
+/**
+ * Sorts tasks matching backend ordering rules:
+ * 1. Active tasks with nearest due_date ASC first
+ * 2. Active tasks without due_date next (chronologically by created_at ASC)
+ * 3. Completed tasks grouped at bottom (chronologically by created_at ASC)
+ */
+export const sortTodos = (items: Todo[]): Todo[] => {
+  return [...items].sort((a, b) => {
+    const getGroup = (todo: Todo) => {
+      if (todo.is_completed) return 2;
+      if (!todo.due_date) return 1;
+      return 0;
+    };
+
+    const groupA = getGroup(a);
+    const groupB = getGroup(b);
+
+    if (groupA !== groupB) {
+      return groupA - groupB;
+    }
+
+    if (groupA === 0) {
+      const dueA = new Date(a.due_date!).getTime();
+      const dueB = new Date(b.due_date!).getTime();
+      if (dueA !== dueB) {
+        return dueA - dueB;
+      }
+    }
+
+    // Undated active tasks: newly created appear first
+    if (groupA === 1) {
+      const createdA = new Date(a.created_at).getTime();
+      const createdB = new Date(b.created_at).getTime();
+      return createdB - createdA;
+    }
+
+    const createdA = new Date(a.created_at).getTime();
+    const createdB = new Date(b.created_at).getTime();
+    return createdA - createdB;
+  });
+};
+
 export const DashboardPage: React.FC = () => {
   const { logout } = useAuth();
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -29,12 +71,8 @@ export const DashboardPage: React.FC = () => {
         const data = await client.get<Todo[]>('/todos');
         if (isMounted) {
           const list = Array.isArray(data) ? data : [];
-          // Ensure chronological ordering by created_at ascending
-          const sorted = [...list].sort(
-            (a, b) =>
-              new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
-          setTodos(sorted);
+          // Retain backend task ordering on initial load
+          setTodos(list);
         }
       } catch (err: any) {
         if (isMounted) {
@@ -55,12 +93,12 @@ export const DashboardPage: React.FC = () => {
   }, []);
 
   const handleTaskCreated = (newTask: Todo) => {
-    setTodos((prev) => [newTask, ...prev]);
+    setTodos((prev) => sortTodos([newTask, ...prev]));
   };
 
   const handleToggleTask = (updatedTodo: Todo) => {
     setTodos((prev) =>
-      prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
+      sortTodos(prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo)))
     );
   };
 
@@ -74,7 +112,7 @@ export const DashboardPage: React.FC = () => {
 
   const handleTaskUpdated = (updatedTodo: Todo) => {
     setTodos((prev) =>
-      prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo))
+      sortTodos(prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo)))
     );
   };
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TOKEN_KEY } from '../src/api/client';
 import DashboardPage from '../src/pages/DashboardPage';
@@ -421,6 +421,87 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
       await userEvent.click(saveBtn);
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Failed to update task on backend');
+    });
+
+    it('renders date picker input pre-populated with task due_date', () => {
+      const todoWithDate: any = {
+        ...sampleTodo,
+        due_date: '2026-10-15T00:00:00.000Z',
+      };
+      render(<EditTaskModal isOpen={true} todo={todoWithDate} onClose={vi.fn()} />);
+
+      const dateInput = screen.getByLabelText(/due date/i);
+      expect(dateInput).toBeInTheDocument();
+      expect(dateInput).toHaveAttribute('type', 'date');
+      expect(dateInput).toHaveValue('2026-10-15');
+    });
+
+    it('submits updated due_date (YYYY-MM-DD) via PATCH /todos/{id}', async () => {
+      let patchBody: any = null;
+      const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        patchBody = JSON.parse(init?.body as string);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({
+            ...sampleTodo,
+            due_date: '2026-10-25',
+          }),
+        });
+      });
+      globalThis.fetch = fetchMock;
+
+      const todoWithDate: any = {
+        ...sampleTodo,
+        due_date: '2026-10-10',
+      };
+      render(<EditTaskModal isOpen={true} todo={todoWithDate} onClose={vi.fn()} />);
+
+      const dateInput = screen.getByLabelText(/due date/i);
+      fireEvent.change(dateInput, { target: { value: '2026-10-25' } });
+
+      const saveBtn = screen.getByRole('button', { name: /save|update/i });
+      await userEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(patchBody).toBeDefined();
+        expect(patchBody.due_date).toBe('2026-10-25');
+      });
+    });
+
+    it('submits null for due_date via PATCH /todos/{id} when date is cleared', async () => {
+      let patchBody: any = null;
+      const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        patchBody = JSON.parse(init?.body as string);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({
+            ...sampleTodo,
+            due_date: null,
+          }),
+        });
+      });
+      globalThis.fetch = fetchMock;
+
+      const todoWithDate: any = {
+        ...sampleTodo,
+        due_date: '2026-10-10',
+      };
+      render(<EditTaskModal isOpen={true} todo={todoWithDate} onClose={vi.fn()} />);
+
+      const dateInput = screen.getByLabelText(/due date/i);
+      fireEvent.change(dateInput, { target: { value: '' } });
+
+      const saveBtn = screen.getByRole('button', { name: /save|update/i });
+      await userEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(patchBody).toBeDefined();
+        expect(patchBody.due_date).toBeNull();
+      });
     });
   });
 

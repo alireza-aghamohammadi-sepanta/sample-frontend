@@ -12,6 +12,7 @@ export interface Todo {
   user_id: string;
   title: string;
   description: string | null;
+  due_date?: string | null;
   is_completed: boolean;
   created_at: string;
   updated_at: string;

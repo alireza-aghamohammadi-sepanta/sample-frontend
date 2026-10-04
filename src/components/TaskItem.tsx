@@ -10,6 +10,48 @@ export interface TaskItemProps {
   onDelete?: (todo: Todo) => void;
 }
 
+export function getLocalTodayString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function getDueDateString(dueDate?: string | null): string | null {
+  if (!dueDate) return null;
+  const trimmed = dueDate.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes('T')) {
+    return trimmed.split('T')[0];
+  }
+  return trimmed.slice(0, 10);
+}
+
+export type DeadlineUrgency = 'overdue' | 'today' | 'upcoming' | null;
+
+export function getDeadlineUrgency(
+  dueDate?: string | null,
+  isCompleted?: boolean,
+  currentDateStr?: string
+): DeadlineUrgency {
+  if (isCompleted) {
+    return null;
+  }
+  const dueStr = getDueDateString(dueDate);
+  if (!dueStr) {
+    return null;
+  }
+  const todayStr = currentDateStr || getLocalTodayString();
+  if (dueStr < todayStr) {
+    return 'overdue';
+  }
+  if (dueStr === todayStr) {
+    return 'today';
+  }
+  return 'upcoming';
+}
+
 export const TaskItem: React.FC<TaskItemProps> = ({
   todo,
   onToggle,
@@ -25,6 +67,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
   const isCompleted =
     optimisticCompleted !== null ? optimisticCompleted : todo.is_completed;
+
+  const urgency = getDeadlineUrgency(todo.due_date, isCompleted);
+  const dueStr = getDueDateString(todo.due_date);
 
   const handleToggle = async () => {
     if (isUpdating) return;
@@ -97,13 +142,63 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           </h3>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {!isCompleted && urgency === 'overdue' && (
+            <span
+              data-testid={`deadline-badge-${todo.id}`}
+              style={{
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                backgroundColor: '#fef2f2',
+                color: '#DC2626',
+                border: '1px solid #fecaca',
+                fontWeight: 500,
+              }}
+            >
+              Overdue
+            </span>
+          )}
+          {!isCompleted && urgency === 'today' && (
+            <span
+              data-testid={`deadline-badge-${todo.id}`}
+              style={{
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                backgroundColor: '#fffbeb',
+                color: '#D97706',
+                border: '1px solid #fde68a',
+                fontWeight: 500,
+              }}
+            >
+              Due Today
+            </span>
+          )}
+          {!isCompleted && urgency === 'upcoming' && (
+            <span
+              data-testid={`deadline-badge-${todo.id}`}
+              style={{
+                fontSize: '0.75rem',
+                padding: '2px 8px',
+                borderRadius: '9999px',
+                backgroundColor: '#f8fafc',
+                color: '#64748B',
+                border: '1px solid #e2e8f0',
+                fontWeight: 500,
+              }}
+            >
+              Due: {dueStr}
+            </span>
+          )}
           <span
+            data-testid={`status-badge-${todo.id}`}
             style={{
               fontSize: '0.75rem',
-              padding: '0.2rem 0.5rem',
-              borderRadius: '12px',
-              backgroundColor: isCompleted ? '#e6f4ea' : '#e8f0fe',
-              color: isCompleted ? '#137333' : '#1a73e8',
+              padding: '2px 8px',
+              borderRadius: '9999px',
+              backgroundColor: isCompleted ? '#ecfdf5' : '#e8f0fe',
+              color: isCompleted ? '#059669' : '#1a73e8',
+              border: isCompleted ? '1px solid #a7f3d0' : '1px solid #bfdbfe',
               fontWeight: 500,
             }}
           >
