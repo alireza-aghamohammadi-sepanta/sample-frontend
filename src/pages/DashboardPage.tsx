@@ -9,6 +9,7 @@ import EmptyState from '../components/EmptyState';
 import CreateTaskModal from '../components/CreateTaskModal';
 import EditTaskModal from '../components/EditTaskModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import DeleteListModal from '../components/DeleteListModal';
 
 /**
  * Sorts tasks matching backend ordering rules:
@@ -63,6 +64,7 @@ export const DashboardPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [deletingTodo, setDeletingTodo] = useState<Todo | null>(null);
+  const [deletingList, setDeletingList] = useState<TodoList | null>(null);
 
   const listsRef = useRef<TodoList[]>([]);
   listsRef.current = lists;
@@ -154,26 +156,35 @@ export const DashboardPage: React.FC = () => {
     );
   };
 
-  const handleDeleteList = async (deletedId: string) => {
-    try {
-      await client.delete(`/lists/${deletedId}`);
-      const updatedLists = listsRef.current.filter((l) => l.id !== deletedId);
-      setLists(updatedLists);
+  const handleRequestDeleteList = (deletedId: string) => {
+    const listToDelete = listsRef.current.find((l) => l.id === deletedId);
+    if (listToDelete) {
+      setDeletingList(listToDelete);
+    }
+  };
 
-      // If active list was deleted, automatically transition back to default list
-      if (activeListIdRef.current === deletedId) {
-        const defaultList = updatedLists.find((l) => l.is_default) || updatedLists[0];
-        const nextListId = defaultList ? defaultList.id : null;
-        setActiveListId(nextListId);
-        await loadTodos(nextListId);
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to delete list');
+  const handleConfirmDeleteList = async (deletedId: string) => {
+    const updatedLists = listsRef.current.filter((l) => l.id !== deletedId);
+    setLists(updatedLists);
+
+    // If active list was deleted, automatically transition back to default list
+    if (activeListIdRef.current === deletedId) {
+      const defaultList = updatedLists.find((l) => l.is_default) || updatedLists[0];
+      const nextListId = defaultList ? defaultList.id : null;
+      setActiveListId(nextListId);
+      await loadTodos(nextListId);
+    } else {
+      await loadTodos(activeListIdRef.current);
     }
   };
 
   const handleTaskCreated = (newTask: Todo) => {
-    setTodos((prev) => sortTodos([newTask, ...prev]));
+    setTodos((prev) => {
+      if (activeListId && newTask.list_id && newTask.list_id !== activeListId) {
+        return prev;
+      }
+      return sortTodos([newTask, ...prev]);
+    });
   };
 
   const handleToggleTask = (updatedTodo: Todo) => {
@@ -191,9 +202,12 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleTaskUpdated = (updatedTodo: Todo) => {
-    setTodos((prev) =>
-      sortTodos(prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo)))
-    );
+    setTodos((prev) => {
+      if (activeListId && updatedTodo.list_id && updatedTodo.list_id !== activeListId) {
+        return prev.filter((todo) => todo.id !== updatedTodo.id);
+      }
+      return sortTodos(prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo)));
+    });
   };
 
   const handleTaskDeleted = (deletedId: string) => {
@@ -228,7 +242,7 @@ export const DashboardPage: React.FC = () => {
         onSelectList={handleSelectList}
         onListCreated={handleListCreated}
         onListUpdated={handleListUpdated}
-        onDeleteList={handleDeleteList}
+        onDeleteList={handleRequestDeleteList}
       />
 
       <div
@@ -331,6 +345,8 @@ export const DashboardPage: React.FC = () => {
             onClose={() => setIsCreateModalOpen(false)}
             onTaskCreated={handleTaskCreated}
             listId={activeListId || undefined}
+            lists={lists}
+            activeListId={activeListId}
           />
 
           <EditTaskModal
@@ -338,6 +354,7 @@ export const DashboardPage: React.FC = () => {
             todo={editingTodo}
             onClose={() => setEditingTodo(null)}
             onTaskUpdated={handleTaskUpdated}
+            lists={lists}
           />
 
           <DeleteConfirmModal
@@ -345,6 +362,13 @@ export const DashboardPage: React.FC = () => {
             todo={deletingTodo}
             onClose={() => setDeletingTodo(null)}
             onTaskDeleted={handleTaskDeleted}
+          />
+
+          <DeleteListModal
+            isOpen={deletingList !== null}
+            list={deletingList}
+            onClose={() => setDeletingList(null)}
+            onListDeleted={handleConfirmDeleteList}
           />
         </div>
       </div>

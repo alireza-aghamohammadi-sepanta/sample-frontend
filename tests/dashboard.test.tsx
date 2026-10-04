@@ -1088,6 +1088,10 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       const deleteBtn = within(workItem).getByRole('button', { name: /delete/i });
       await userEvent.click(deleteBtn);
 
+      // Confirm deletion in DeleteListModal
+      const confirmDeleteBtn = await screen.findByRole('button', { name: /^delete list$|^delete$/i });
+      await userEvent.click(confirmDeleteBtn);
+
       // Verify DELETE /lists/list-work was called
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(

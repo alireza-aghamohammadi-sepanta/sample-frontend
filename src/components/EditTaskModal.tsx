@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
-import { Todo, Asset } from '../types/todo';
+import { Todo, Asset, TodoList } from '../types/todo';
 import AttachmentUploader from './AttachmentUploader';
 import AttachmentChip from './AttachmentChip';
 
@@ -9,18 +9,23 @@ export interface EditTaskModalProps {
   todo: Todo | null;
   onClose: () => void;
   onTaskUpdated?: (updatedTodo: Todo) => void;
+  lists?: TodoList[];
 }
+
+const EMPTY_LISTS: TodoList[] = [];
 
 export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   isOpen,
   todo,
   onClose,
   onTaskUpdated,
+  lists = EMPTY_LISTS,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [selectedListId, setSelectedListId] = useState<string>(todo?.list_id || '');
   const [touched, setTouched] = useState<{ title: boolean; description: boolean }>({
     title: false,
     description: false,
@@ -34,6 +39,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       setDescription(todo.description || '');
       setDueDate(todo.due_date ? todo.due_date.split('T')[0] : '');
       setAssets(todo.assets ? [...todo.assets] : []);
+      setSelectedListId(todo.list_id || '');
       setTouched({ title: false, description: false });
       setApiError(null);
       setIsSubmitting(false);
@@ -90,6 +96,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         description: description.trim() || null,
         due_date: dueDate || null,
         asset_ids: assets.map((a) => a.id),
+        ...(selectedListId ? { list_id: selectedListId } : {}),
       };
       const updated = await client.patch<Todo>(`/todos/${todo.id}`, payload);
       if (onTaskUpdated) {
@@ -336,6 +343,46 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
               )}
             </div>
           </div>
+
+          {lists && lists.length > 0 && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label
+                htmlFor="edit-task-list"
+                style={{
+                  display: 'block',
+                  marginBottom: '0.25rem',
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                }}
+              >
+                List
+              </label>
+              <select
+                id="edit-task-list"
+                name="list_id"
+                aria-label="List"
+                value={selectedListId}
+                onChange={(e) => setSelectedListId(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  color: '#0F172A',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {lists.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ marginBottom: '1.25rem' }}>
             <label

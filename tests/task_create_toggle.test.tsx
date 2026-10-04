@@ -7,7 +7,7 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { BrowserRouter } from 'react-router-dom';
 import CreateTaskModal from '../src/components/CreateTaskModal';
 import TaskItem from '../src/components/TaskItem';
-import { Todo } from '../src/types/todo';
+import { Todo, TodoList } from '../src/types/todo';
 
 const initialTodos: Todo[] = [
   {
@@ -631,6 +631,153 @@ describe('Task Creation and Completion Toggle (T3 / R3 & R4)', () => {
       expect(screen.getByRole('heading', { name: 'Completed Task' })).toHaveStyle({
         textDecoration: 'line-through',
       });
+    });
+  });
+
+  describe('Task Creation List Assignment (T4 / AC-1)', () => {
+    const mockLists: TodoList[] = [
+      {
+        id: 'list-inbox',
+        user_id: 'user-1',
+        name: 'Inbox',
+        is_default: true,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'list-work',
+        user_id: 'user-1',
+        name: 'Work',
+        is_default: false,
+        created_at: '2026-01-01T01:00:00.000Z',
+        updated_at: '2026-01-01T01:00:00.000Z',
+      },
+      {
+        id: 'list-personal',
+        user_id: 'user-1',
+        name: 'Personal',
+        is_default: false,
+        created_at: '2026-01-01T02:00:00.000Z',
+        updated_at: '2026-01-01T02:00:00.000Z',
+      },
+    ];
+
+    it('renders list selector dropdown pre-selected with the active list in CreateTaskModal and submits selected list_id', async () => {
+      let createdPayload: any = null;
+      const onTaskCreated = vi.fn();
+      const onClose = vi.fn();
+
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (String(url).endsWith('/todos') && init?.method === 'POST') {
+          createdPayload = JSON.parse(init.body as string);
+          return Promise.resolve({
+            ok: true,
+            status: 201,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => ({
+              id: 'todo-created-work',
+              user_id: 'user-1',
+              list_id: createdPayload.list_id,
+              title: createdPayload.title,
+              description: createdPayload.description,
+              is_completed: false,
+              created_at: '2026-01-01T03:00:00.000Z',
+              updated_at: '2026-01-01T03:00:00.000Z',
+              assets: [],
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled: ${url}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      render(
+        <CreateTaskModal
+          isOpen={true}
+          onClose={onClose}
+          onTaskCreated={onTaskCreated}
+          lists={mockLists}
+          activeListId="list-work"
+        />
+      );
+
+      // Verify list selector exists and is pre-selected to activeListId ("Work")
+      const listSelect = screen.getByRole('combobox', { name: /list/i });
+      expect(listSelect).toBeInTheDocument();
+      expect(listSelect).toHaveValue('list-work');
+
+      // Enter task title
+      const titleInput = screen.getByLabelText(/title/i);
+      await userEvent.type(titleInput, 'Work Task Title');
+
+      // Submit
+      const submitBtn = screen.getByRole('button', { name: /create task/i });
+      await userEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(onTaskCreated).toHaveBeenCalled();
+      });
+
+      expect(createdPayload).toBeDefined();
+      expect(createdPayload.list_id).toBe('list-work');
+      expect(createdPayload.title).toBe('Work Task Title');
+    });
+
+    it('allows changing list in CreateTaskModal dropdown before submission', async () => {
+      let createdPayload: any = null;
+      const onTaskCreated = vi.fn();
+
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (String(url).endsWith('/todos') && init?.method === 'POST') {
+          createdPayload = JSON.parse(init.body as string);
+          return Promise.resolve({
+            ok: true,
+            status: 201,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => ({
+              id: 'todo-created-personal',
+              user_id: 'user-1',
+              list_id: createdPayload.list_id,
+              title: createdPayload.title,
+              is_completed: false,
+              created_at: '2026-01-01T03:00:00.000Z',
+              updated_at: '2026-01-01T03:00:00.000Z',
+              assets: [],
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled: ${url}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      render(
+        <CreateTaskModal
+          isOpen={true}
+          onClose={vi.fn()}
+          onTaskCreated={onTaskCreated}
+          lists={mockLists}
+          activeListId="list-work"
+        />
+      );
+
+      const listSelect = screen.getByRole('combobox', { name: /list/i });
+      expect(listSelect).toHaveValue('list-work');
+
+      // Change list to Personal
+      await userEvent.selectOptions(listSelect, 'list-personal');
+      expect(listSelect).toHaveValue('list-personal');
+
+      const titleInput = screen.getByLabelText(/title/i);
+      await userEvent.type(titleInput, 'Personal Task');
+
+      const submitBtn = screen.getByRole('button', { name: /create task/i });
+      await userEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(onTaskCreated).toHaveBeenCalled();
+      });
+
+      expect(createdPayload.list_id).toBe('list-personal');
     });
   });
 });
