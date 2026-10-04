@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TOKEN_KEY } from '../src/api/client';
 import DashboardPage from '../src/pages/DashboardPage';
@@ -379,6 +379,88 @@ describe('Task Creation and Completion Toggle (T3 / R3 & R4)', () => {
       await userEvent.click(submitBtn);
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Title is invalid on server');
+    });
+
+    it('renders date picker input in CreateTaskModal', () => {
+      render(<CreateTaskModal isOpen={true} onClose={vi.fn()} />);
+      const dateInput = screen.getByLabelText(/due date/i);
+      expect(dateInput).toBeInTheDocument();
+      expect(dateInput).toHaveAttribute('type', 'date');
+    });
+
+    it('submits selected due_date (YYYY-MM-DD) via POST /todos', async () => {
+      let requestBody: any = null;
+      const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        requestBody = JSON.parse(init?.body as string);
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({
+            id: 'new-todo',
+            title: 'Task with Date',
+            description: null,
+            due_date: '2026-10-15',
+            is_completed: false,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+            assets: [],
+          }),
+        });
+      });
+      globalThis.fetch = fetchMock;
+
+      render(<CreateTaskModal isOpen={true} onClose={vi.fn()} />);
+
+      const titleInput = screen.getByLabelText(/title/i);
+      await userEvent.type(titleInput, 'Task with Date');
+
+      const dateInput = screen.getByLabelText(/due date/i);
+      fireEvent.change(dateInput, { target: { value: '2026-10-15' } });
+
+      const submitBtn = screen.getByRole('button', { name: /create task/i });
+      await userEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(requestBody).toBeDefined();
+        expect(requestBody.due_date).toBe('2026-10-15');
+      });
+    });
+
+    it('submits null for due_date via POST /todos when date is omitted', async () => {
+      let requestBody: any = null;
+      const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        requestBody = JSON.parse(init?.body as string);
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: async () => ({
+            id: 'new-todo-no-date',
+            title: 'Task without Date',
+            description: null,
+            due_date: null,
+            is_completed: false,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+            assets: [],
+          }),
+        });
+      });
+      globalThis.fetch = fetchMock;
+
+      render(<CreateTaskModal isOpen={true} onClose={vi.fn()} />);
+
+      const titleInput = screen.getByLabelText(/title/i);
+      await userEvent.type(titleInput, 'Task without Date');
+
+      const submitBtn = screen.getByRole('button', { name: /create task/i });
+      await userEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(requestBody).toBeDefined();
+        expect(requestBody.due_date).toBeNull();
+      });
     });
   });
 
