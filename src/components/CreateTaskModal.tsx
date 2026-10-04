@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import client from '../api/client';
-import { Todo, Asset } from '../types/todo';
+import { Todo, Asset, TodoList } from '../types/todo';
 import AttachmentUploader from './AttachmentUploader';
 import AttachmentChip from './AttachmentChip';
 
@@ -8,17 +8,37 @@ export interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTaskCreated?: (task: Todo) => void;
+  listId?: string;
+  lists?: TodoList[];
+  activeListId?: string | null;
 }
+
+const EMPTY_LISTS: TodoList[] = [];
 
 export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   isOpen,
   onClose,
   onTaskCreated,
+  listId,
+  lists = EMPTY_LISTS,
+  activeListId,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [assets, setAssets] = useState<Asset[]>([]);
+
+  const getInitialListId = () => {
+    if (activeListId) return activeListId;
+    if (listId) return listId;
+    if (lists && lists.length > 0) {
+      const defaultList = lists.find((l) => l.is_default);
+      return defaultList ? defaultList.id : lists[0].id;
+    }
+    return '';
+  };
+
+  const [selectedListId, setSelectedListId] = useState<string>(getInitialListId);
   const [touched, setTouched] = useState<{ title: boolean; description: boolean }>({
     title: false,
     description: false,
@@ -32,6 +52,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       setDescription('');
       setDueDate('');
       setAssets([]);
+      setSelectedListId(getInitialListId());
       setTouched({ title: false, description: false });
       setApiError(null);
       setIsSubmitting(false);
@@ -83,11 +104,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     try {
       setIsSubmitting(true);
       setApiError(null);
+      const chosenListId = selectedListId || activeListId || listId;
       const payload = {
         title: trimmedTitle,
         description: description.trim() || null,
         due_date: dueDate || null,
         asset_ids: assets.map((a) => a.id),
+        ...(chosenListId ? { list_id: chosenListId } : {}),
       };
       const created = await client.post<Todo>('/todos', payload);
       if (onTaskCreated) {
@@ -330,6 +353,46 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               )}
             </div>
           </div>
+
+          {lists && lists.length > 0 && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label
+                htmlFor="task-list"
+                style={{
+                  display: 'block',
+                  marginBottom: '0.25rem',
+                  fontWeight: 500,
+                  fontSize: '0.9rem',
+                }}
+              >
+                List
+              </label>
+              <select
+                id="task-list"
+                name="list_id"
+                aria-label="List"
+                value={selectedListId}
+                onChange={(e) => setSelectedListId(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  color: '#0F172A',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {lists.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ marginBottom: '1.25rem' }}>
             <label

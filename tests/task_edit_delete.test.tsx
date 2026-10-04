@@ -7,13 +7,15 @@ import { AuthProvider } from '../src/context/AuthContext';
 import { BrowserRouter } from 'react-router-dom';
 import EditTaskModal from '../src/components/EditTaskModal';
 import DeleteConfirmModal from '../src/components/DeleteConfirmModal';
+import DeleteListModal from '../src/components/DeleteListModal';
 import TaskItem from '../src/components/TaskItem';
-import { Todo } from '../src/types/todo';
+import { Todo, TodoList } from '../src/types/todo';
 
 const initialTodos: Todo[] = [
   {
     id: 'todo-1',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'First active task',
     description: 'First active description',
     is_completed: false,
@@ -33,6 +35,7 @@ const initialTodos: Todo[] = [
   {
     id: 'todo-2',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'Second completed task',
     description: 'Second completed description',
     is_completed: true,
@@ -343,6 +346,7 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
     const sampleTodo: Todo = {
       id: 'sample-todo-1',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Sample Edit Todo',
       description: 'Sample description',
       is_completed: false,
@@ -509,6 +513,7 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
     const sampleTodo: Todo = {
       id: 'sample-todo-2',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Task To Delete',
       description: null,
       is_completed: false,
@@ -549,6 +554,7 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
     const sampleTodo: Todo = {
       id: 'item-triggers',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Action Trigger Task',
       description: 'Trigger description',
       is_completed: false,
@@ -577,6 +583,297 @@ describe('Task Editing and Deletion (T4 / R5 AC-1 to AC-4)', () => {
 
       expect(handleDelete).toHaveBeenCalledTimes(1);
       expect(handleDelete).toHaveBeenCalledWith(sampleTodo);
+    });
+  });
+
+  describe('Task Edit List Reassignment and Safe List Deletion Confirmation (T4 / AC-1, AC-3)', () => {
+    const mockLists: TodoList[] = [
+      {
+        id: 'list-inbox',
+        user_id: 'user-1',
+        name: 'Inbox',
+        is_default: true,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'list-work',
+        user_id: 'user-1',
+        name: 'Work',
+        is_default: false,
+        created_at: '2026-01-01T01:00:00.000Z',
+        updated_at: '2026-01-01T01:00:00.000Z',
+      },
+      {
+        id: 'list-personal',
+        user_id: 'user-1',
+        name: 'Personal',
+        is_default: false,
+        created_at: '2026-01-01T02:00:00.000Z',
+        updated_at: '2026-01-01T02:00:00.000Z',
+      },
+    ];
+
+    const sampleTodo: Todo = {
+      id: 'todo-work-1',
+      user_id: 'user-1',
+      list_id: 'list-work',
+      title: 'Work Project Task',
+      description: 'Important work task',
+      is_completed: false,
+      created_at: '2026-01-01T10:00:00.000Z',
+      updated_at: '2026-01-01T10:00:00.000Z',
+      assets: [],
+    };
+
+    it('pre-populates EditTaskModal with current list_id and submits updated list_id on move', async () => {
+      let patchPayload: any = null;
+      const onTaskUpdated = vi.fn();
+      const onClose = vi.fn();
+
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (String(url).endsWith('/todos/todo-work-1') && init?.method === 'PATCH') {
+          patchPayload = JSON.parse(init.body as string);
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => ({
+              ...sampleTodo,
+              ...patchPayload,
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled: ${url}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      render(
+        <EditTaskModal
+          isOpen={true}
+          todo={sampleTodo}
+          onClose={onClose}
+          onTaskUpdated={onTaskUpdated}
+          lists={mockLists}
+        />
+      );
+
+      // Verify list selector is pre-selected with task's current list ("Work")
+      const listSelect = screen.getByRole('combobox', { name: /list/i });
+      expect(listSelect).toBeInTheDocument();
+      expect(listSelect).toHaveValue('list-work');
+
+      // Change list to "Personal"
+      await userEvent.selectOptions(listSelect, 'list-personal');
+      expect(listSelect).toHaveValue('list-personal');
+
+      // Save
+      const saveBtn = screen.getByRole('button', { name: /save changes|save|update/i });
+      await userEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(onTaskUpdated).toHaveBeenCalled();
+      });
+
+      expect(patchPayload).toBeDefined();
+      expect(patchPayload.list_id).toBe('list-personal');
+    });
+
+    it('immediately reflects task move across dashboard list views', async () => {
+      const workListTodos: Todo[] = [
+        {
+          id: 'todo-work-1',
+          user_id: 'user-1',
+          list_id: 'list-work',
+          title: 'Work Project Task',
+          description: 'Will be moved',
+          is_completed: false,
+          created_at: '2026-01-01T10:00:00.000Z',
+          updated_at: '2026-01-01T10:00:00.000Z',
+          assets: [],
+        },
+      ];
+
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const urlStr = String(url);
+        if (urlStr.endsWith('/lists') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => mockLists,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-inbox') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => [],
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-work') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => workListTodos,
+          });
+        }
+        if (urlStr.endsWith('/todos/todo-work-1') && init?.method === 'PATCH') {
+          const body = JSON.parse(init.body as string);
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => ({
+              ...workListTodos[0],
+              ...body,
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled: ${urlStr}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      renderDashboard();
+
+      // Switch to Work list
+      expect(await screen.findByText('Work')).toBeInTheDocument();
+      await userEvent.click(screen.getByText('Work'));
+
+      expect(await screen.findByText('Work Project Task')).toBeInTheDocument();
+
+      // Edit task
+      const editBtn = screen.getByRole('button', { name: /edit/i });
+      await userEvent.click(editBtn);
+
+      // Change list to Personal
+      const listSelect = await screen.findByRole('combobox', { name: /list/i });
+      await userEvent.selectOptions(listSelect, 'list-personal');
+
+      // Submit
+      const saveBtn = screen.getByRole('button', { name: /save changes|save|update/i });
+      await userEvent.click(saveBtn);
+
+      // Verify the moved task is immediately removed from the Work list view
+      await waitFor(() => {
+        expect(screen.queryByText('Work Project Task')).not.toBeInTheDocument();
+      });
+    });
+
+    describe('DeleteListModal', () => {
+      const customList: TodoList = {
+        id: 'list-custom',
+        user_id: 'user-1',
+        name: 'Custom Project',
+        is_default: false,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      };
+
+      it('displays reassurance text that all tasks and media attachments are preserved and atomically reassigned to the default list', () => {
+        render(
+          <DeleteListModal
+            isOpen={true}
+            list={customList}
+            onClose={vi.fn()}
+            onListDeleted={vi.fn()}
+          />
+        );
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText(/Custom Project/i)).toBeInTheDocument();
+        expect(screen.getByText(/reassign|default list/i)).toBeInTheDocument();
+        expect(screen.getByText(/preserved|safely|without data loss/i)).toBeInTheDocument();
+      });
+
+      it('invokes DELETE /lists/{id} when confirming deletion in DeleteListModal', async () => {
+        const onClose = vi.fn();
+        const onListDeleted = vi.fn();
+
+        const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+          if (String(url).endsWith('/lists/list-custom') && init?.method === 'DELETE') {
+            return Promise.resolve({
+              ok: true,
+              status: 204,
+              headers: new Headers(),
+              text: async () => '',
+            });
+          }
+          return Promise.reject(new Error(`Unhandled: ${url}`));
+        });
+        globalThis.fetch = fetchMock;
+
+        render(
+          <DeleteListModal
+            isOpen={true}
+            list={customList}
+            onClose={onClose}
+            onListDeleted={onListDeleted}
+          />
+        );
+
+        const confirmBtn = screen.getByRole('button', { name: /delete/i });
+        await userEvent.click(confirmBtn);
+
+        await waitFor(() => {
+          expect(fetchMock).toHaveBeenCalledWith(
+            expect.stringMatching(/\/lists\/list-custom$/),
+            expect.objectContaining({ method: 'DELETE' })
+          );
+          expect(onListDeleted).toHaveBeenCalledWith('list-custom');
+          expect(onClose).toHaveBeenCalled();
+        });
+      });
+
+      it('displays error alert if list deletion fails', async () => {
+        const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+          if (String(url).endsWith('/lists/list-custom') && init?.method === 'DELETE') {
+            return Promise.resolve({
+              ok: false,
+              status: 500,
+              headers: new Headers({ 'content-type': 'application/json' }),
+              json: async () => ({ detail: 'Failed to delete list on server' }),
+            });
+          }
+          return Promise.reject(new Error(`Unhandled: ${url}`));
+        });
+        globalThis.fetch = fetchMock;
+
+        render(
+          <DeleteListModal
+            isOpen={true}
+            list={customList}
+            onClose={vi.fn()}
+          />
+        );
+
+        const confirmBtn = screen.getByRole('button', { name: /delete/i });
+        await userEvent.click(confirmBtn);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Failed to delete list on server');
+      });
+
+      it('cancels deletion without invoking DELETE endpoint', async () => {
+        const onClose = vi.fn();
+        const fetchMock = vi.fn();
+        globalThis.fetch = fetchMock;
+
+        render(
+          <DeleteListModal
+            isOpen={true}
+            list={customList}
+            onClose={onClose}
+          />
+        );
+
+        const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+        await userEvent.click(cancelBtn);
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(fetchMock).not.toHaveBeenCalled();
+      });
     });
   });
 });

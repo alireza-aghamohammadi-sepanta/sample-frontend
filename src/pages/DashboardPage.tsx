@@ -1,13 +1,15 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Todo, FilterStatus } from '../types/todo';
+import { Todo, TodoList, FilterStatus } from '../types/todo';
+import ListSidebar from '../components/ListSidebar';
 import TaskFilter from '../components/TaskFilter';
 import TaskList from '../components/TaskList';
 import EmptyState from '../components/EmptyState';
 import CreateTaskModal from '../components/CreateTaskModal';
 import EditTaskModal from '../components/EditTaskModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import DeleteListModal from '../components/DeleteListModal';
 
 /**
  * Sorts tasks matching backend ordering rules:
@@ -53,6 +55,8 @@ export const sortTodos = (items: Todo[]): Todo[] => {
 
 export const DashboardPage: React.FC = () => {
   const { logout } = useAuth();
+  const [lists, setLists] = useState<TodoList[]>([]);
+  const [activeListId, setActiveListId] = useState<string | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [loading, setLoading] = useState<boolean>(true);
@@ -60,19 +64,63 @@ export const DashboardPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [deletingTodo, setDeletingTodo] = useState<Todo | null>(null);
+  const [deletingList, setDeletingList] = useState<TodoList | null>(null);
+
+  const listsRef = useRef<TodoList[]>([]);
+  listsRef.current = lists;
+
+  const activeListIdRef = useRef<string | null>(null);
+  activeListIdRef.current = activeListId;
+
+  const loadTodos = async (listId: string | null) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const endpoint = listId ? `/todos?list_id=${listId}` : '/todos';
+      const data = await client.get<Todo[]>(endpoint);
+      setTodos(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchTodos = async () => {
+    const initDashboard = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await client.get<Todo[]>('/todos');
+
+        let initialListId: string | null = null;
+        try {
+          const listsData = await client.get<TodoList[]>('/lists');
+          const isValidLists =
+            Array.isArray(listsData) &&
+            listsData.every((item) => typeof item?.name === 'string');
+
+          if (isMounted && isValidLists) {
+            setLists(listsData);
+            const defaultList = listsData.find((l) => l.is_default);
+            if (defaultList) {
+              initialListId = defaultList.id;
+            } else if (listsData.length > 0) {
+              initialListId = listsData[0].id;
+            }
+          }
+        } catch {
+          // /lists may fail or not be mocked in legacy tests
+        }
+
         if (isMounted) {
-          const list = Array.isArray(data) ? data : [];
-          // Retain backend task ordering on initial load
-          setTodos(list);
+          setActiveListId(initialListId);
+          const endpoint = initialListId ? `/todos?list_id=${initialListId}` : '/todos';
+          const data = await client.get<Todo[]>(endpoint);
+          if (isMounted) {
+            setTodos(Array.isArray(data) ? data : []);
+          }
         }
       } catch (err: any) {
         if (isMounted) {
@@ -85,15 +133,58 @@ export const DashboardPage: React.FC = () => {
       }
     };
 
-    fetchTodos();
+    initDashboard();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
+  const handleSelectList = (listId: string) => {
+    if (listId === activeListId) return;
+    setActiveListId(listId);
+    loadTodos(listId);
+  };
+
+  const handleListCreated = (newList: TodoList) => {
+    setLists((prev) => [...prev, newList]);
+  };
+
+  const handleListUpdated = (updatedList: TodoList) => {
+    setLists((prev) =>
+      prev.map((l) => (l.id === updatedList.id ? updatedList : l))
+    );
+  };
+
+  const handleRequestDeleteList = (deletedId: string) => {
+    const listToDelete = listsRef.current.find((l) => l.id === deletedId);
+    if (listToDelete) {
+      setDeletingList(listToDelete);
+    }
+  };
+
+  const handleConfirmDeleteList = async (deletedId: string) => {
+    const updatedLists = listsRef.current.filter((l) => l.id !== deletedId);
+    setLists(updatedLists);
+
+    // If active list was deleted, automatically transition back to default list
+    if (activeListIdRef.current === deletedId) {
+      const defaultList = updatedLists.find((l) => l.is_default) || updatedLists[0];
+      const nextListId = defaultList ? defaultList.id : null;
+      setActiveListId(nextListId);
+      await loadTodos(nextListId);
+    } else {
+      await loadTodos(activeListIdRef.current);
+    }
+  };
+
   const handleTaskCreated = (newTask: Todo) => {
-    setTodos((prev) => sortTodos([newTask, ...prev]));
+    setTodos((prev) => {
+      if (activeListId && newTask.list_id && newTask.list_id !== activeListId) {
+        return prev;
+      }
+      return sortTodos([newTask, ...prev]);
+    });
   };
 
   const handleToggleTask = (updatedTodo: Todo) => {
@@ -111,9 +202,12 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleTaskUpdated = (updatedTodo: Todo) => {
-    setTodos((prev) =>
-      sortTodos(prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo)))
-    );
+    setTodos((prev) => {
+      if (activeListId && updatedTodo.list_id && updatedTodo.list_id !== activeListId) {
+        return prev.filter((todo) => todo.id !== updatedTodo.id);
+      }
+      return sortTodos(prev.map((todo) => (todo.id === updatedTodo.id ? updatedTodo : todo)));
+    });
   };
 
   const handleTaskDeleted = (deletedId: string) => {
@@ -134,103 +228,150 @@ export const DashboardPage: React.FC = () => {
   }, [todos, filter]);
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem 1rem' }}>
-      <header
+    <div
+      style={{
+        display: 'flex',
+        minHeight: '100vh',
+        backgroundColor: '#F8FAFC',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}
+    >
+      <ListSidebar
+        lists={lists}
+        activeListId={activeListId}
+        onSelectList={handleSelectList}
+        onListCreated={handleListCreated}
+        onListUpdated={handleListUpdated}
+        onDeleteList={handleRequestDeleteList}
+      />
+
+      <div
         style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '2rem',
-          borderBottom: '1px solid #eaeaea',
-          paddingBottom: '1rem',
+          flex: 1,
+          minWidth: 0,
+          padding: '2rem 1.5rem',
         }}
       >
-        <h1 style={{ margin: 0, fontSize: '1.75rem' }}>Dashboard</h1>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <header
             style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#007bff',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 500,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '2rem',
+              borderBottom: '1px solid #E2E8F0',
+              paddingBottom: '1rem',
             }}
           >
-            Create Task
-          </button>
-          <button
-            onClick={logout}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#dc3545',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 500,
-            }}
-          >
-            Log Out
-          </button>
-        </div>
-      </header>
+            <h1 style={{ margin: 0, fontSize: '1.75rem', color: '#0F172A', fontWeight: 600 }}>
+              Dashboard
+            </h1>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                style={{
+                  height: '36px',
+                  padding: '8px 16px',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                }}
+              >
+                Create Task
+              </button>
+              <button
+                onClick={logout}
+                style={{
+                  height: '36px',
+                  padding: '8px 16px',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                }}
+              >
+                Log Out
+              </button>
+            </div>
+          </header>
 
-      <main>
-        <div style={{ marginBottom: '1.5rem' }}>
-          <TaskFilter currentFilter={filter} onFilterChange={setFilter} />
-        </div>
+          <main>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <TaskFilter currentFilter={filter} onFilterChange={setFilter} />
+            </div>
 
-        {loading ? (
-          <div data-testid="loading-indicator" style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-            Loading tasks...
-          </div>
-        ) : error ? (
-          <div
-            role="alert"
-            style={{
-              padding: '1rem',
-              backgroundColor: '#f8d7da',
-              color: '#721c24',
-              borderRadius: '4px',
-              marginBottom: '1rem',
-            }}
-          >
-            {error}
-          </div>
-        ) : filteredTodos.length === 0 ? (
-          <EmptyState filter={filter} />
-        ) : (
-          <TaskList
-            todos={filteredTodos}
-            onToggle={handleToggleTask}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
+            {loading ? (
+              <div
+                data-testid="loading-indicator"
+                style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}
+              >
+                Loading tasks...
+              </div>
+            ) : error ? (
+              <div
+                role="alert"
+                style={{
+                  padding: '1rem',
+                  backgroundColor: '#FEF2F2',
+                  color: '#DC2626',
+                  border: '1px solid #FEE2E2',
+                  borderRadius: '6px',
+                  marginBottom: '1rem',
+                }}
+              >
+                {error}
+              </div>
+            ) : filteredTodos.length === 0 ? (
+              <EmptyState filter={filter} />
+            ) : (
+              <TaskList
+                todos={filteredTodos}
+                onToggle={handleToggleTask}
+                onEdit={handleEditTask}
+                onDelete={handleDeleteTask}
+              />
+            )}
+          </main>
+
+          <CreateTaskModal
+            isOpen={isCreateModalOpen}
+            onClose={() => setIsCreateModalOpen(false)}
+            onTaskCreated={handleTaskCreated}
+            listId={activeListId || undefined}
+            lists={lists}
+            activeListId={activeListId}
           />
-        )}
-      </main>
 
-      <CreateTaskModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onTaskCreated={handleTaskCreated}
-      />
+          <EditTaskModal
+            isOpen={editingTodo !== null}
+            todo={editingTodo}
+            onClose={() => setEditingTodo(null)}
+            onTaskUpdated={handleTaskUpdated}
+            lists={lists}
+          />
 
-      <EditTaskModal
-        isOpen={editingTodo !== null}
-        todo={editingTodo}
-        onClose={() => setEditingTodo(null)}
-        onTaskUpdated={handleTaskUpdated}
-      />
+          <DeleteConfirmModal
+            isOpen={deletingTodo !== null}
+            todo={deletingTodo}
+            onClose={() => setDeletingTodo(null)}
+            onTaskDeleted={handleTaskDeleted}
+          />
 
-      <DeleteConfirmModal
-        isOpen={deletingTodo !== null}
-        todo={deletingTodo}
-        onClose={() => setDeletingTodo(null)}
-        onTaskDeleted={handleTaskDeleted}
-      />
+          <DeleteListModal
+            isOpen={deletingList !== null}
+            list={deletingList}
+            onClose={() => setDeletingList(null)}
+            onListDeleted={handleConfirmDeleteList}
+          />
+        </div>
+      </div>
     </div>
   );
 };

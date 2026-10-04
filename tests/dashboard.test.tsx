@@ -6,12 +6,13 @@ import { TOKEN_KEY } from '../src/api/client';
 import DashboardPage from '../src/pages/DashboardPage';
 import { AuthProvider } from '../src/context/AuthContext';
 import { BrowserRouter } from 'react-router-dom';
-import { Todo } from '../src/types/todo';
+import { Todo, TodoList } from '../src/types/todo';
 
 const mockTodos = [
   {
     id: 'todo-1',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'First task (Active)',
     description: 'First task description',
     is_completed: false,
@@ -22,6 +23,7 @@ const mockTodos = [
   {
     id: 'todo-2',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'Second task (Completed)',
     description: 'Second task description',
     is_completed: true,
@@ -32,6 +34,7 @@ const mockTodos = [
   {
     id: 'todo-3',
     user_id: 'user-1',
+    list_id: 'list-1',
     title: 'Third task (Active)',
     description: null,
     is_completed: false,
@@ -268,6 +271,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
     {
       id: 'task-active-soon',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Active Task Due Soon',
       description: null,
       due_date: '2026-10-10T12:00:00.000Z',
@@ -279,6 +283,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
     {
       id: 'task-active-later',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Active Task Due Later',
       description: null,
       due_date: '2026-10-20T12:00:00.000Z',
@@ -290,6 +295,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
     {
       id: 'task-active-undated',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Active Task Undated',
       description: null,
       due_date: null,
@@ -301,6 +307,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
     {
       id: 'task-completed-old',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Completed Task Early Created',
       description: null,
       due_date: '2026-10-01T12:00:00.000Z',
@@ -312,6 +319,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
     {
       id: 'task-completed-new',
       user_id: 'user-1',
+      list_id: 'list-1',
       title: 'Completed Task Late Created',
       description: null,
       due_date: null,
@@ -350,6 +358,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-1',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task Due Oct 10',
         description: null,
         due_date: '2026-10-10',
@@ -361,6 +370,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-2',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task Due Oct 25',
         description: null,
         due_date: '2026-10-25',
@@ -372,6 +382,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-3',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task Completed',
         description: null,
         due_date: null,
@@ -385,6 +396,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
     const newTask: Todo = {
       id: 't-new',
       user_id: 'u-1',
+      list_id: 'list-1',
       title: 'Task Due Oct 15',
       description: null,
       due_date: '2026-10-15',
@@ -453,6 +465,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-1',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task Due Oct 10',
         description: null,
         due_date: '2026-10-10',
@@ -464,6 +477,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-2',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task Completed',
         description: null,
         due_date: null,
@@ -477,6 +491,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
     const newTask: Todo = {
       id: 't-undated',
       user_id: 'u-1',
+      list_id: 'list-1',
       title: 'New Undated Task',
       description: null,
       due_date: null,
@@ -542,6 +557,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-1',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task 1 Due Soon',
         description: null,
         due_date: '2026-10-10',
@@ -553,6 +569,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-2',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task 2 Due Later',
         description: null,
         due_date: '2026-10-20',
@@ -564,6 +581,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-3',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task 3 Completed',
         description: null,
         due_date: null,
@@ -629,6 +647,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-active',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task Active Due Oct 20',
         description: null,
         due_date: '2026-10-20',
@@ -640,6 +659,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-completed',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task Reactivated Due Oct 10',
         description: null,
         due_date: '2026-10-10',
@@ -703,6 +723,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-1',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task A (Due Oct 15)',
         description: null,
         due_date: '2026-10-15',
@@ -714,6 +735,7 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       {
         id: 't-2',
         user_id: 'u-1',
+        list_id: 'list-1',
         title: 'Task B (Due Oct 25 initially)',
         description: null,
         due_date: '2026-10-25',
@@ -777,5 +799,316 @@ describe('Dashboard Deadline-Aware Ordering Preservation (T4 / AC-1 & AC-2)', ()
       'Task B (Due Oct 25 initially)',
       'Task A (Due Oct 15)',
     ]);
+  });
+
+  describe('List-Scoped Sidebar Navigation and Filtering (T3)', () => {
+    const mockLists: TodoList[] = [
+      {
+        id: 'list-inbox',
+        user_id: 'user-1',
+        name: 'Inbox',
+        is_default: true,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'list-work',
+        user_id: 'user-1',
+        name: 'Work',
+        is_default: false,
+        created_at: '2026-01-01T01:00:00.000Z',
+        updated_at: '2026-01-01T01:00:00.000Z',
+      },
+    ];
+
+    const inboxTodos: Todo[] = [
+      {
+        id: 'todo-inbox-1',
+        user_id: 'user-1',
+        list_id: 'list-inbox',
+        title: 'Inbox Active Task',
+        description: null,
+        due_date: null,
+        is_completed: false,
+        created_at: '2026-01-01T02:00:00.000Z',
+        updated_at: '2026-01-01T02:00:00.000Z',
+        assets: [],
+      },
+      {
+        id: 'todo-inbox-2',
+        user_id: 'user-1',
+        list_id: 'list-inbox',
+        title: 'Inbox Completed Task',
+        description: null,
+        due_date: null,
+        is_completed: true,
+        created_at: '2026-01-01T03:00:00.000Z',
+        updated_at: '2026-01-01T03:00:00.000Z',
+        assets: [],
+      },
+    ];
+
+    const workTodos: Todo[] = [
+      {
+        id: 'todo-work-1',
+        user_id: 'user-1',
+        list_id: 'list-work',
+        title: 'Work Active Task',
+        description: null,
+        due_date: null,
+        is_completed: false,
+        created_at: '2026-01-01T04:00:00.000Z',
+        updated_at: '2026-01-01T04:00:00.000Z',
+        assets: [],
+      },
+      {
+        id: 'todo-work-2',
+        user_id: 'user-1',
+        list_id: 'list-work',
+        title: 'Work Completed Task',
+        description: null,
+        due_date: null,
+        is_completed: true,
+        created_at: '2026-01-01T05:00:00.000Z',
+        updated_at: '2026-01-01T05:00:00.000Z',
+        assets: [],
+      },
+    ];
+
+    it('selects default list by default on dashboard load and renders only its tasks', async () => {
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const urlStr = String(url);
+        if (urlStr.endsWith('/lists') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => mockLists,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-inbox') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => inboxTodos,
+          });
+        }
+        return Promise.reject(new Error(`Unhandled request: ${urlStr} ${init?.method}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      renderDashboard();
+
+      // Verify GET /todos?list_id=list-inbox is queried
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringMatching(/\/todos\?list_id=list-inbox/),
+          expect.objectContaining({ method: 'GET' })
+        );
+      });
+
+      // Default list tasks appear
+      expect(await screen.findByText('Inbox Active Task')).toBeInTheDocument();
+      expect(screen.getByText('Inbox Completed Task')).toBeInTheDocument();
+
+      // Other list tasks do not appear
+      expect(screen.queryByText('Work Active Task')).not.toBeInTheDocument();
+      expect(screen.queryByText('Work Completed Task')).not.toBeInTheDocument();
+
+      // Sidebar shows Inbox as active
+      const inboxItem = screen.getByTestId('list-item-list-inbox');
+      expect(inboxItem).toHaveAttribute('data-active', 'true');
+    });
+
+    it('switches active list when clicking another list in sidebar and renders only that list tasks', async () => {
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const urlStr = String(url);
+        if (urlStr.endsWith('/lists') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => mockLists,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-inbox') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => inboxTodos,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-work') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => workTodos,
+          });
+        }
+        return Promise.reject(new Error(`Unhandled request: ${urlStr} ${init?.method}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      renderDashboard();
+
+      expect(await screen.findByText('Inbox Active Task')).toBeInTheDocument();
+
+      // Click Work list in sidebar
+      const workItem = screen.getByText('Work');
+      await userEvent.click(workItem);
+
+      // Verify GET /todos?list_id=list-work was called
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringMatching(/\/todos\?list_id=list-work/),
+          expect.objectContaining({ method: 'GET' })
+        );
+      });
+
+      // Work tasks appear
+      expect(await screen.findByText('Work Active Task')).toBeInTheDocument();
+      expect(screen.getByText('Work Completed Task')).toBeInTheDocument();
+
+      // Inbox tasks disappear
+      expect(screen.queryByText('Inbox Active Task')).not.toBeInTheDocument();
+      expect(screen.queryByText('Inbox Completed Task')).not.toBeInTheDocument();
+
+      // Sidebar shows Work as active
+      expect(screen.getByTestId('list-item-list-work')).toHaveAttribute('data-active', 'true');
+      expect(screen.getByTestId('list-item-list-inbox')).toHaveAttribute('data-active', 'false');
+    });
+
+    it('applies status filters (active/completed) strictly within the selected list', async () => {
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const urlStr = String(url);
+        if (urlStr.endsWith('/lists') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => mockLists,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-inbox') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => inboxTodos,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-work') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => workTodos,
+          });
+        }
+        return Promise.reject(new Error(`Unhandled request: ${urlStr} ${init?.method}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      renderDashboard();
+
+      expect(await screen.findByText('Inbox Active Task')).toBeInTheDocument();
+
+      // Switch to Work list
+      await userEvent.click(screen.getByText('Work'));
+      expect(await screen.findByText('Work Active Task')).toBeInTheDocument();
+      expect(screen.getByText('Work Completed Task')).toBeInTheDocument();
+
+      // Filter by Active
+      await userEvent.click(screen.getByRole('button', { name: /^active$/i }));
+      expect(screen.getByText('Work Active Task')).toBeInTheDocument();
+      expect(screen.queryByText('Work Completed Task')).not.toBeInTheDocument();
+      expect(screen.queryByText('Inbox Active Task')).not.toBeInTheDocument();
+
+      // Filter by Completed
+      await userEvent.click(screen.getByRole('button', { name: /^completed$/i }));
+      expect(screen.getByText('Work Completed Task')).toBeInTheDocument();
+      expect(screen.queryByText('Work Active Task')).not.toBeInTheDocument();
+      expect(screen.queryByText('Inbox Completed Task')).not.toBeInTheDocument();
+    });
+
+    it('automatically transitions active view back to default list when active custom list is deleted', async () => {
+      let lists = [...mockLists];
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const urlStr = String(url);
+        if (urlStr.endsWith('/lists') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => lists,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-inbox') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => inboxTodos,
+          });
+        }
+        if (urlStr.includes('/todos?list_id=list-work') && (!init?.method || init.method === 'GET')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: async () => workTodos,
+          });
+        }
+        if (urlStr.endsWith('/lists/list-work') && init?.method === 'DELETE') {
+          lists = lists.filter((l) => l.id !== 'list-work');
+          return Promise.resolve({
+            ok: true,
+            status: 204,
+            headers: new Headers(),
+            text: async () => '',
+          });
+        }
+        return Promise.reject(new Error(`Unhandled request: ${urlStr} ${init?.method}`));
+      });
+      globalThis.fetch = fetchMock;
+
+      renderDashboard();
+
+      expect(await screen.findByText('Inbox Active Task')).toBeInTheDocument();
+
+      // Switch to Work list
+      await userEvent.click(screen.getByText('Work'));
+      expect(await screen.findByText('Work Active Task')).toBeInTheDocument();
+
+      // Click delete button for Work list
+      const workItem = screen.getByTestId('list-item-list-work');
+      const deleteBtn = within(workItem).getByRole('button', { name: /delete/i });
+      await userEvent.click(deleteBtn);
+
+      // Confirm deletion in DeleteListModal
+      const confirmDeleteBtn = await screen.findByRole('button', { name: /^delete list$|^delete$/i });
+      await userEvent.click(confirmDeleteBtn);
+
+      // Verify DELETE /lists/list-work was called
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringMatching(/\/lists\/list-work$/),
+          expect.objectContaining({ method: 'DELETE' })
+        );
+      });
+
+      // Active view transitions back to default list (Inbox)
+      await waitFor(() => {
+        expect(screen.getByTestId('list-item-list-inbox')).toHaveAttribute('data-active', 'true');
+      });
+
+      // Inbox tasks render again
+      expect(await screen.findByText('Inbox Active Task')).toBeInTheDocument();
+      expect(screen.getByText('Inbox Completed Task')).toBeInTheDocument();
+      expect(screen.queryByText('Work Active Task')).not.toBeInTheDocument();
+    });
   });
 });
