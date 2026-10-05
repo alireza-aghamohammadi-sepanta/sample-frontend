@@ -2,7 +2,7 @@
 type: concept
 title: Deployment & Containerization
 summary: Multi-stage Docker packaging, unprivileged Nginx configuration, SPA rewrite rules, and security headers for Cloud Run.
-related: ["architecture.md"]
+related: ["architecture.md", "routing.md"]
 source_paths: ["Dockerfile", "nginx.conf", "vite.config.ts", "package.json"]
 ---
 # Deployment & Containerization

@@ -2,7 +2,7 @@
 type: concept
 title: Application Routing
 summary: Client-side routing configuration, route protection, and navigation flow.
-related: ["auth.md", "tasks.md", "architecture.md"]
+related: ["auth.md", "tasks.md", "architecture.md", "deployment.md"]
 source_paths: ["src/App.tsx", "src/main.tsx", "src/components/ProtectedRoute.tsx"]
 ---
 # Application Routing
