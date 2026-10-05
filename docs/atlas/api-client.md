@@ -2,7 +2,7 @@
 type: concept
 title: API Client & Networking
 summary: HTTP client abstraction using fetch with Bearer token injection, error handling, and session interceptors.
-related: ["auth.md", "tasks.md", "attachments.md"]
+related: ["auth.md", "tasks.md", "attachments.md", "lists.md"]
 source_paths: ["src/api/client.ts"]
 ---
 # API Client & Networking
@@ -13,6 +13,7 @@ The application communicates with backend HTTP services through a centralized ne
 
 The client module exports:
 - `client` / `apiClient`: An object providing convenient HTTP verb methods (`get`, `post`, `put`, `patch`, `delete`) as well as lower-level `request`.
+- List helper functions: `getLists()`, `createList()`, `updateList()`, and `deleteList()`.
 - `ApiError`: A custom error class encapsulating HTTP status codes and backend error payloads.
 - Token helpers: `getToken()`, `setToken()`, `clearToken()`, and `TOKEN_KEY` constant (`'token'`).
 - Lifecycle callbacks: `setOnUnauthorized()`.
@@ -49,6 +50,12 @@ client.post<T>(endpoint, data, options)
 client.put<T>(endpoint, data, options)
 client.patch<T>(endpoint, data, options)
 client.delete<T>(endpoint, options)
+
+// List helpers (also available on client / apiClient)
+getLists(): Promise<TodoList[]>
+createList(data: { name: string } | string): Promise<TodoList>
+updateList(id: string, data: { name: string } | string): Promise<TodoList>
+deleteList(id: string): Promise<void>
 ```
 
 ## Error Handling and `ApiError`

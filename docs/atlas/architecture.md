@@ -2,7 +2,7 @@
 type: concept
 title: System Architecture
 summary: Architectural overview of the React 18, TypeScript, and Vite single-page application and its core subsystems.
-related: ["routing.md", "auth.md", "api-client.md", "tasks.md", "attachments.md", "deployment.md", "testing.md"]
+related: ["routing.md", "auth.md", "api-client.md", "tasks.md", "lists.md", "attachments.md", "deployment.md", "testing.md"]
 source_paths: ["package.json", "src/main.tsx", "src/App.tsx", "vite.config.ts"]
 ---
 # System Architecture
@@ -35,6 +35,9 @@ src/main.tsx (ReactDOM.createRoot('#root'))
                           ├── Route "/register"  -> RegisterPage
                           ├── Route "/"          -> ProtectedRoute
                           │                           └── DashboardPage
+                          │                                ├── ListSidebar
+                          │                                │    ├── CreateListModal
+                          │                                │    └── EditListModal
                           │                                ├── TaskFilter
                           │                                ├── TaskList
                           │                                │    └── TaskItem
@@ -46,7 +49,8 @@ src/main.tsx (ReactDOM.createRoot('#root'))
                           │                                ├── EditTaskModal
                           │                                │    ├── AttachmentUploader
                           │                                │    └── AttachmentChip
-                          │                                └── DeleteConfirmModal
+                          │                                ├── DeleteConfirmModal
+                          │                                └── DeleteListModal
                           └── Route "*"          -> Navigate to "/"
 ```
 
@@ -57,7 +61,7 @@ See [routing](routing.md) for detailed route pathing and protection flows.
 State in `sample-frontend` follows a layered pattern without requiring external state stores like Redux:
 
 1. **Global Authentication State**: Managed by `AuthProvider` in [auth](auth.md), exposing `token`, `isAuthenticated`, and session expiration alert strings via the `useAuth()` custom hook.
-2. **View and Entity State**: The [tasks](tasks.md) view (`DashboardPage`) maintains task collections in React local state (`todos`), triggering immediate updates on creation, edit, or deletion.
+2. **View and Entity State**: The [tasks](tasks.md) and [lists](lists.md) view (`DashboardPage`) maintains list collections (`lists`), active list selection (`activeListId`), and task collections (`todos`) in React local state, triggering immediate updates on creation, edit, or deletion.
 3. **Optimistic Updates**: `TaskItem` applies optimistic UI state toggles when completing tasks, reverting only upon API error responses.
 4. **Service Layer**: Non-UI side effects, such as HTTP communication in [api-client](api-client.md) and Google Cloud Storage uploads in [attachments](attachments.md), are decoupled into dedicated utility services.
 
@@ -65,7 +69,7 @@ State in `sample-frontend` follows a layered pattern without requiring external 
 
 The frontend interfaces with two primary backend targets:
 
-1. **RESTful Application Backend**: Provides authentication (`/auth/login`, `/signup`), task CRUD operations (`/todos`), and signed URL generation (`/assets/signed-url`, `/assets/confirm`).
+1. **RESTful Application Backend**: Provides authentication (`/auth/login`, `/signup`), list management (`/lists`), task CRUD operations (`/todos`), and signed URL generation (`/assets/signed-url`, `/assets/confirm`).
 2. **Google Cloud Storage (GCS)**: Files are uploaded directly from the browser to GCS via HTTP `PUT` requests against pre-signed URLs, preventing file upload bottlenecks through the application backend.
 
 ## Deployment Architecture

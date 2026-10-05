@@ -2,8 +2,8 @@
 type: concept
 title: Testing Suite & Quality Assurance
 summary: Vitest and React Testing Library test architecture, test setup, mock patterns, and unit/integration coverage.
-related: ["tasks.md", "auth.md", "attachments.md", "api-client.md"]
-source_paths: ["tests/setup.ts", "tests/auth.test.tsx", "tests/dashboard.test.tsx", "tests/task_create_toggle.test.tsx", "tests/task_edit_delete.test.tsx", "tests/attachments.test.tsx", "vite.config.ts"]
+related: ["tasks.md", "lists.md", "auth.md", "attachments.md", "api-client.md"]
+source_paths: ["tests/setup.ts", "tests/auth.test.tsx", "tests/dashboard.test.tsx", "tests/task_create_toggle.test.tsx", "tests/task_edit_delete.test.tsx", "tests/attachments.test.tsx", "tests/lists.test.tsx", "vite.config.ts"]
 ---
 # Testing Suite & Quality Assurance
 
@@ -64,21 +64,21 @@ The test suite is organized into modular files covering specific domains:
 - Covers features described in [auth](auth.md).
 
 ### 2. Dashboard Tests (`tests/dashboard.test.tsx`)
-- Verifies initial task loading, sorting by `created_at` timestamp, and loading indicators.
+- Verifies initial list and task loading, list-scoped querying (`/todos?list_id=...`), multi-tier sorting (due dates, active tasks, completed tasks), and loading indicators.
 - Validates in-memory filtering across `'all'`, `'active'`, and `'completed'` states.
 - Verifies empty state messages when filtered views have no matching items.
 - Tests server error alerts when fetching tasks fails.
 - Covers features described in [tasks](tasks.md).
 
 ### 3. Task Creation & Toggle Tests (`tests/task_create_toggle.test.tsx`)
-- Tests opening and submitting the task creation modal.
+- Tests opening and submitting the task creation modal with optional due date and list selection.
 - Enforces title length limits (1–255 characters) and description limits (1024 characters).
 - Verifies optimistic completion checkbox toggling and rollback behavior on network failure.
 - Covers features described in [tasks](tasks.md).
 
 ### 4. Task Edit & Delete Tests (`tests/task_edit_delete.test.tsx`)
-- Tests pre-filling task edit modal fields with existing data.
-- Verifies updating task titles, descriptions, and asset lists.
+- Tests pre-filling task edit modal fields with existing data (including due date and list association).
+- Verifies updating task titles, descriptions, due dates, list assignment, and asset lists.
 - Tests delete confirmation modal flow, server deletion requests, and task list removal.
 - Covers features described in [tasks](tasks.md).
 
@@ -88,3 +88,11 @@ The test suite is organized into modular files covering specific domains:
 - Tests the three-step signed URL upload flow (`signed-url` -> GCS PUT -> `confirm`).
 - Validates thumbnail and video element rendering inside `AttachmentChip`.
 - Covers features described in [attachments](attachments.md).
+
+### 6. List Management Tests (`tests/lists.test.tsx`)
+- Tests pinned default list positioning at the top of the sidebar and alphabetical sorting of custom lists.
+- Verifies active list selection and semantic `data-active` state toggling.
+- Tests presence of rename and delete triggers on custom lists and ensures default lists cannot be renamed or deleted.
+- Validates list name constraints (1–255 characters, required) in `CreateListModal` and `EditListModal`.
+- Verifies list creation (`POST /lists`), renaming (`PATCH /lists/:id`), and deletion (`DELETE /lists/:id`) flows.
+- Covers features described in [lists](lists.md).
